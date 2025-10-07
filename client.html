@@ -74,6 +74,21 @@
             margin: 20px 0;
             color: #666;
         }
+        
+        .new-vote-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .new-vote-btn:hover {
+            background-color: #138496;
+        }
     </style>
 </head>
 <body>
@@ -104,6 +119,7 @@
     </div>
     
     <button id="submitBtn" disabled>Enviar Feedback</button>
+    <button id="newVoteBtn" class="new-vote-btn" style="display: none;">Votar Nuevamente</button>
     
     <div id="message" class="message"></div>
 
@@ -115,53 +131,26 @@
         // Elementos DOM
         const feedbackBtns = document.querySelectorAll('.feedback-btn');
         const submitBtn = document.getElementById('submitBtn');
+        const newVoteBtn = document.getElementById('newVoteBtn');
         const messageDiv = document.getElementById('message');
         
         let selectedValue = null;
-        let clientId = localStorage.getItem('clientId') || generateClientId();
+        let clientId = localStorage.getItem('feedback_clientId') || generateClientId();
         
         // Generar ID único para este cliente
         function generateClientId() {
             const id = 'client_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('clientId', id);
+            localStorage.setItem('feedback_clientId', id);
             return id;
-        }
-        
-        // Cargar voto anterior si existe
-        function loadPreviousVote() {
-            const votesKey = `votes_${sessionId}`;
-            let votes = JSON.parse(localStorage.getItem(votesKey) || '{}');
-            
-            if (votes[clientId] !== undefined) {
-                // Encontrar y seleccionar el botón correspondiente al voto anterior
-                selectedValue = votes[clientId];
-                feedbackBtns.forEach(btn => {
-                    if (parseFloat(btn.dataset.value) === selectedValue) {
-                        btn.classList.add('selected');
-                    }
-                });
-                submitBtn.disabled = false;
-                messageDiv.textContent = 'Voto anterior cargado. Puedes cambiarlo si lo deseas.';
-                messageDiv.className = 'message';
-                messageDiv.style.display = 'block';
-                messageDiv.style.backgroundColor = '#d1ecf1';
-                messageDiv.style.color = '#0c5460';
-                messageDiv.style.border = '1px solid #bee5eb';
-            }
         }
         
         // Event listeners para botones de feedback
         feedbackBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Remover selección anterior
                 feedbackBtns.forEach(b => b.classList.remove('selected'));
-                
-                // Seleccionar nuevo
                 btn.classList.add('selected');
                 selectedValue = parseFloat(btn.dataset.value);
                 submitBtn.disabled = false;
-                
-                // Ocultar mensaje anterior
                 messageDiv.style.display = 'none';
             });
         });
@@ -170,24 +159,39 @@
         submitBtn.addEventListener('click', () => {
             if (selectedValue === null) return;
             
-            // Guardar/actualizar voto en localStorage
-            const votesKey = `votes_${sessionId}`;
+            // Guardar voto en localStorage
+            const votesKey = `feedback_votes_${sessionId}`;
             let votes = JSON.parse(localStorage.getItem(votesKey) || '{}');
             votes[clientId] = selectedValue;
             localStorage.setItem(votesKey, JSON.stringify(votes));
             
             // Mostrar mensaje de confirmación
-            messageDiv.textContent = '¡Gracias por tu feedback! Tu voto ha sido registrado.';
+            const valueText = selectedValue === 0 ? 'No entiendes' : 
+                             selectedValue === 0.5 ? 'Entiendes parcialmente' : 
+                             'Entiendes completamente';
+            
+            messageDiv.textContent = `¡Gracias! Registramos que ${valueText.toLowerCase()}. Puedes votar nuevamente si cambia tu comprensión.`;
             messageDiv.className = 'message success';
             messageDiv.style.display = 'block';
             
-            // No deshabilitar botones - permitir cambios futuros
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 3000);
+            // Mostrar botón para nuevo voto
+            newVoteBtn.style.display = 'block';
+            submitBtn.style.display = 'none';
+            
+            // Deseleccionar botones
+            feedbackBtns.forEach(btn => btn.classList.remove('selected'));
+            selectedValue = null;
         });
         
-        // Verificar si ya se votó al cargar
+        // Preparar para nuevo voto
+        newVoteBtn.addEventListener('click', () => {
+            messageDiv.style.display = 'none';
+            submitBtn.style.display = 'block';
+            newVoteBtn.style.display = 'none';
+            submitBtn.disabled = true;
+        });
+        
+        // Verificar si hay sesión al cargar
         window.addEventListener('load', () => {
             if (!sessionId) {
                 messageDiv.textContent = 'Error: No se encontró la sesión.';
@@ -195,8 +199,7 @@
                 messageDiv.style.backgroundColor = '#f8d7da';
                 messageDiv.style.color = '#721c24';
                 submitBtn.disabled = true;
-            } else {
-                loadPreviousVote();
+                newVoteBtn.style.display = 'none';
             }
         });
     </script>
