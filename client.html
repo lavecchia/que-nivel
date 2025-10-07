@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback - Comprensión del Tema</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .feedback-options {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+        }
+        
+        .feedback-btn {
+            font-size: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .feedback-btn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .feedback-btn.selected {
+            background-color: #e0e0e0;
+        }
+        
+        #submitBtn {
+            padding: 12px 30px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        #submitBtn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        #submitBtn:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        
+        .message {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .instructions {
+            margin: 20px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>¿Cómo vas con la comprensión del tema?</h1>
+    
+    <div class="instructions">
+        <p>Selecciona tu nivel de comprensión:</p>
+    </div>
+    
+    <div class="feedback-options">
+        <button class="feedback-btn" data-value="0" title="No entiendo">
+            👎
+        </button>
+        <button class="feedback-btn" data-value="0.5" title="Entiendo parcialmente">
+            👊
+        </button>
+        <button class="feedback-btn" data-value="1" title="Entiendo completamente">
+            👍
+        </button>
+    </div>
+    
+    <div class="labels">
+        <div style="display: flex; justify-content: space-around; margin-top: -10px;">
+            <span style="font-size: 12px; color: #666;">No entiendo</span>
+            <span style="font-size: 12px; color: #666;">Parcialmente</span>
+            <span style="font-size: 12px; color: #666;">Comprendo</span>
+        </div>
+    </div>
+    
+    <button id="submitBtn" disabled>Enviar Feedback</button>
+    
+    <div id="message" class="message"></div>
+
+    <script>
+        // Obtener session ID de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        
+        // Elementos DOM
+        const feedbackBtns = document.querySelectorAll('.feedback-btn');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+        
+        let selectedValue = null;
+        let clientId = localStorage.getItem('clientId') || generateClientId();
+        
+        // Generar ID único para este cliente
+        function generateClientId() {
+            const id = 'client_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('clientId', id);
+            return id;
+        }
+        
+        // Cargar voto anterior si existe
+        function loadPreviousVote() {
+            const votesKey = `votes_${sessionId}`;
+            let votes = JSON.parse(localStorage.getItem(votesKey) || '{}');
+            
+            if (votes[clientId] !== undefined) {
+                // Encontrar y seleccionar el botón correspondiente al voto anterior
+                selectedValue = votes[clientId];
+                feedbackBtns.forEach(btn => {
+                    if (parseFloat(btn.dataset.value) === selectedValue) {
+                        btn.classList.add('selected');
+                    }
+                });
+                submitBtn.disabled = false;
+                messageDiv.textContent = 'Voto anterior cargado. Puedes cambiarlo si lo deseas.';
+                messageDiv.className = 'message';
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = '#d1ecf1';
+                messageDiv.style.color = '#0c5460';
+                messageDiv.style.border = '1px solid #bee5eb';
+            }
+        }
+        
+        // Event listeners para botones de feedback
+        feedbackBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remover selección anterior
+                feedbackBtns.forEach(b => b.classList.remove('selected'));
+                
+                // Seleccionar nuevo
+                btn.classList.add('selected');
+                selectedValue = parseFloat(btn.dataset.value);
+                submitBtn.disabled = false;
+                
+                // Ocultar mensaje anterior
+                messageDiv.style.display = 'none';
+            });
+        });
+        
+        // Enviar feedback
+        submitBtn.addEventListener('click', () => {
+            if (selectedValue === null) return;
+            
+            // Guardar/actualizar voto en localStorage
+            const votesKey = `votes_${sessionId}`;
+            let votes = JSON.parse(localStorage.getItem(votesKey) || '{}');
+            votes[clientId] = selectedValue;
+            localStorage.setItem(votesKey, JSON.stringify(votes));
+            
+            // Mostrar mensaje de confirmación
+            messageDiv.textContent = '¡Gracias por tu feedback! Tu voto ha sido registrado.';
+            messageDiv.className = 'message success';
+            messageDiv.style.display = 'block';
+            
+            // No deshabilitar botones - permitir cambios futuros
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        });
+        
+        // Verificar si ya se votó al cargar
+        window.addEventListener('load', () => {
+            if (!sessionId) {
+                messageDiv.textContent = 'Error: No se encontró la sesión.';
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                submitBtn.disabled = true;
+            } else {
+                loadPreviousVote();
+            }
+        });
+    </script>
+</body>
+</html>
