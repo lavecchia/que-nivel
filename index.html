@@ -6,6 +6,7 @@
     <title>Sistema de Feedback en Tiempo Real</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
     <style>
+        /* [MANTENER TODOS LOS ESTILOS ANTERIORES] */
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
@@ -71,7 +72,7 @@
             text-align: left;
         }
         
-        /* Estilos para el popup */
+        /* Estilos para el popup - REDUCIDOS */
         .popup-overlay {
             display: none;
             position: fixed;
@@ -85,10 +86,10 @@
         
         .popup-content {
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             text-align: center;
-            width: 500px;
+            width: 400px;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -99,7 +100,7 @@
         .popup-header {
             cursor: move;
             padding: 10px;
-            margin: -30px -30px 20px -30px;
+            margin: -20px -20px 15px -20px;
             background: #f1f1f1;
             border-radius: 10px 10px 0 0;
             display: flex;
@@ -120,16 +121,16 @@
         }
         
         .popup-indicator-display {
-            width: 300px;
-            height: 300px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            margin: 20px auto;
-            border: 5px solid #333;
+            margin: 15px auto;
+            border: 4px solid #333;
             transition: background-color 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 24px;
             font-weight: bold;
             color: #333;
             background-color: #CCCCCC;
@@ -141,14 +142,14 @@
         }
         
         .popup-controls {
-            margin-top: 20px;
+            margin-top: 15px;
             display: flex;
             justify-content: center;
             gap: 10px;
         }
         
         .close-popup {
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
             color: #333;
         }
@@ -219,7 +220,8 @@
         // Configuración inicial
         let votes = [];
         let sessionId = generateSessionId();
-        let currentPopupView = 'qr'; // 'qr' o 'indicator'
+        let currentPopupView = 'qr';
+        let lastUpdateTime = 0;
         
         // Elementos DOM
         const indicator = document.getElementById('indicator');
@@ -239,10 +241,6 @@
         const popupIndicatorDisplay = document.getElementById('popupIndicatorDisplay');
         const showQrBtn = document.getElementById('showQrBtn');
         const showIndicatorBtn = document.getElementById('showIndicatorBtn');
-        
-        // Variables para arrastrar el popup
-        let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
 
         // Función para generar ID de sesión único
         function generateSessionId() {
@@ -252,16 +250,10 @@
         // Función para generar QR
         function generateQR() {
             const qrcodeElement = document.getElementById('qrcode');
-            qrcodeElement.innerHTML = ''; // Limpiar QR anterior
+            qrcodeElement.innerHTML = '';
             
-            // Construir URL correcta
-            let qrUrl;
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                qrUrl = `${window.location.origin}/client.html?session=${sessionId}`;
-            } else {
-                // Para servidores reales
-                qrUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}client.html?session=${sessionId}`;
-            }
+            // URL para cualquier dispositivo
+            let qrUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}client.html?session=${sessionId}`;
             
             debugInfo.innerHTML = `
                 <div>URL del QR: ${qrUrl}</div>
@@ -270,41 +262,20 @@
                 <div>Origin: ${window.location.origin}</div>
             `;
             
-            console.log("Generando QR para:", qrUrl);
-            
-            // Generar QR principal usando la librería
+            // Generar QR principal
             try {
                 QRCode.toCanvas(qrcodeElement, qrUrl, {
                     width: 200,
                     margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                }, function (error) {
-                    if (error) {
-                        console.error('Error generando QR:', error);
-                        qrcodeElement.innerHTML = '<p style="color: red;">Error generando QR: ' + error.message + '</p>';
-                    } else {
-                        console.log('QR principal generado exitosamente');
-                    }
+                    color: { dark: '#000000', light: '#FFFFFF' }
                 });
                 
                 // Generar QR para el popup
                 const popupQrCanvas = document.getElementById('popupQrCanvas');
                 QRCode.toCanvas(popupQrCanvas, qrUrl, {
-                    width: 300,
+                    width: 250,
                     margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                }, function (error) {
-                    if (error) {
-                        console.error('Error generando QR del popup:', error);
-                    } else {
-                        console.log('QR del popup generado exitosamente');
-                    }
+                    color: { dark: '#000000', light: '#FFFFFF' }
                 });
             } catch (error) {
                 console.error('Error en QRCode:', error);
@@ -321,87 +292,83 @@
         
         // Función para calcular color basado en el promedio
         function calculateColor(average) {
-            if (average >= 0.67) return '#4CAF50'; // Verde
-            if (average >= 0.33) return '#FFC107'; // Amarillo
-            return '#F44336'; // Rojo
+            if (average >= 0.67) return '#4CAF50';
+            if (average >= 0.33) return '#FFC107';
+            return '#F44336';
         }
         
         // Función para actualizar el indicador
         function updateIndicator() {
-            const storedVotes = localStorage.getItem(`votes_${sessionId}`);
+            const storedVotes = localStorage.getItem(`feedback_votes_${sessionId}`);
             
             if (!storedVotes) {
-                indicator.style.backgroundColor = '#CCCCCC';
-                indicator.textContent = '0%';
-                totalVotesSpan.textContent = '0';
-                averageSpan.textContent = '0%';
-                
-                // Actualizar también el indicador del popup
-                popupIndicatorDisplay.style.backgroundColor = '#CCCCCC';
-                popupIndicatorDisplay.textContent = '0%';
+                resetDisplay();
                 return;
             }
             
-            const votesObj = JSON.parse(storedVotes);
-            const voteValues = Object.values(votesObj);
-            
-            if (voteValues.length === 0) {
-                indicator.style.backgroundColor = '#CCCCCC';
-                indicator.textContent = '0%';
-                totalVotesSpan.textContent = '0';
-                averageSpan.textContent = '0%';
+            try {
+                const votesData = JSON.parse(storedVotes);
+                const voteValues = Object.values(votesData);
                 
-                popupIndicatorDisplay.style.backgroundColor = '#CCCCCC';
-                popupIndicatorDisplay.textContent = '0%';
-                return;
+                if (voteValues.length === 0) {
+                    resetDisplay();
+                    return;
+                }
+                
+                const average = voteValues.reduce((sum, vote) => sum + vote, 0) / voteValues.length;
+                const percentage = Math.round(average * 100);
+                const color = calculateColor(average);
+                
+                // Actualizar indicadores
+                indicator.style.backgroundColor = color;
+                indicator.textContent = `${percentage}%`;
+                totalVotesSpan.textContent = voteValues.length;
+                averageSpan.textContent = `${percentage}%`;
+                
+                popupIndicatorDisplay.style.backgroundColor = color;
+                popupIndicatorDisplay.textContent = `${percentage}%`;
+                
+                votes = voteValues;
+                
+            } catch (error) {
+                console.error('Error procesando votos:', error);
+                resetDisplay();
             }
-            
-            const average = voteValues.reduce((sum, vote) => sum + vote, 0) / voteValues.length;
-            const percentage = Math.round(average * 100);
-            const color = calculateColor(average);
-            
-            // Actualizar indicador principal
-            indicator.style.backgroundColor = color;
-            indicator.textContent = `${percentage}%`;
-            totalVotesSpan.textContent = voteValues.length;
-            averageSpan.textContent = `${percentage}%`;
-            
-            // Actualizar indicador del popup
-            popupIndicatorDisplay.style.backgroundColor = color;
-            popupIndicatorDisplay.textContent = `${percentage}%`;
+        }
+        
+        function resetDisplay() {
+            indicator.style.backgroundColor = '#CCCCCC';
+            indicator.textContent = '0%';
+            totalVotesSpan.textContent = '0';
+            averageSpan.textContent = '0%';
+            popupIndicatorDisplay.style.backgroundColor = '#CCCCCC';
+            popupIndicatorDisplay.textContent = '0%';
         }
         
         // Función para resetear votos
         function resetVotes() {
-            localStorage.removeItem(`votes_${sessionId}`);
+            localStorage.removeItem(`feedback_votes_${sessionId}`);
             votes = [];
             updateIndicator();
-            console.log('Votos reseteados');
         }
         
+        // [MANTENER LAS FUNCIONES DE POPUP Y ARRASTRAR...]
         // Función para mostrar el popup
         function showPopup() {
             popupOverlay.style.display = 'block';
-            // Mostrar la vista actual
             showPopupView(currentPopupView);
         }
         
-        // Función para ocultar el popup
         function hidePopup() {
             popupOverlay.style.display = 'none';
         }
         
-        // Función para cambiar la vista en el popup
         function showPopupView(view) {
-            // Ocultar todas las vistas
             popupQr.classList.remove('active');
             popupIndicator.classList.remove('active');
-            
-            // Actualizar botones
             showQrBtn.classList.remove('active');
             showIndicatorBtn.classList.remove('active');
             
-            // Mostrar la vista seleccionada
             if (view === 'qr') {
                 popupQr.classList.add('active');
                 showQrBtn.classList.add('active');
@@ -413,16 +380,13 @@
             }
         }
         
-        // Funcionalidad para arrastrar el popup
         function makeDraggable(element, handle) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             
             handle.onmousedown = dragMouseDown;
             
             function dragMouseDown(e) {
-                e = e || window.event;
                 e.preventDefault();
-                // Obtener la posición inicial del cursor
                 pos3 = e.clientX;
                 pos4 = e.clientY;
                 document.onmouseup = closeDragElement;
@@ -430,21 +394,17 @@
             }
             
             function elementDrag(e) {
-                e = e || window.event;
                 e.preventDefault();
-                // Calcular la nueva posición
                 pos1 = pos3 - e.clientX;
                 pos2 = pos4 - e.clientY;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                // Establecer la nueva posición del elemento
                 element.style.top = (element.offsetTop - pos2) + "px";
                 element.style.left = (element.offsetLeft - pos1) + "px";
-                element.style.transform = 'none'; // Eliminar transformación centrada
+                element.style.transform = 'none';
             }
             
             function closeDragElement() {
-                // Detener el movimiento cuando se suelta el botón del mouse
                 document.onmouseup = null;
                 document.onmousemove = null;
             }
@@ -457,40 +417,21 @@
         showQrBtn.addEventListener('click', () => showPopupView('qr'));
         showIndicatorBtn.addEventListener('click', () => showPopupView('indicator'));
         
-        // Cerrar popup al hacer clic fuera del contenido
         popupOverlay.addEventListener('click', function(event) {
             if (event.target === popupOverlay) {
                 hidePopup();
             }
         });
         
-        // Verificar votos periódicamente (simulación de tiempo real)
+        // Verificar votos periódicamente
         setInterval(() => {
-            const storedVotes = localStorage.getItem(`votes_${sessionId}`);
-            if (storedVotes) {
-                const votesObj = JSON.parse(storedVotes);
-                const newVotes = Object.values(votesObj);
-                
-                // Solo actualizar si hay cambios (comparar longitud o hash simple)
-                if (newVotes.length !== votes.length || JSON.stringify(newVotes) !== JSON.stringify(votes)) {
-                    votes = newVotes;
-                    updateIndicator();
-                    console.log('Votos actualizados:', votesObj);
-                }
-            } else if (votes.length > 0) {
-                // Si no hay votos almacenados pero la variable local tiene votos, resetear
-                votes = [];
-                updateIndicator();
-            }
+            updateIndicator();
         }, 1000);
         
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Página cargada, generando QR...");
             generateQR();
             updateIndicator();
-            
-            // Hacer el popup arrastrable
             makeDraggable(popupContent, popupHeader);
         });
     </script>
