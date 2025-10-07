@@ -74,21 +74,6 @@
             margin: 20px 0;
             color: #666;
         }
-        
-        .new-vote-btn {
-            padding: 10px 20px;
-            font-size: 14px;
-            background-color: #17a2b8;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        .new-vote-btn:hover {
-            background-color: #138496;
-        }
     </style>
 </head>
 <body>
@@ -119,7 +104,6 @@
     </div>
     
     <button id="submitBtn" disabled>Enviar Feedback</button>
-    <button id="newVoteBtn" class="new-vote-btn" style="display: none;">Votar Nuevamente</button>
     
     <div id="message" class="message"></div>
 
@@ -131,27 +115,20 @@
         // Elementos DOM
         const feedbackBtns = document.querySelectorAll('.feedback-btn');
         const submitBtn = document.getElementById('submitBtn');
-        const newVoteBtn = document.getElementById('newVoteBtn');
         const messageDiv = document.getElementById('message');
         
         let selectedValue = null;
-        let clientId = localStorage.getItem('feedback_clientId') || generateClientId();
-        
-        // Generar ID único para este cliente
-        function generateClientId() {
-            const id = 'client_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('feedback_clientId', id);
-            return id;
-        }
         
         // Event listeners para botones de feedback
         feedbackBtns.forEach(btn => {
             btn.addEventListener('click', () => {
+                // Remover selección anterior
                 feedbackBtns.forEach(b => b.classList.remove('selected'));
+                
+                // Seleccionar nuevo
                 btn.classList.add('selected');
                 selectedValue = parseFloat(btn.dataset.value);
                 submitBtn.disabled = false;
-                messageDiv.style.display = 'none';
             });
         });
         
@@ -159,39 +136,35 @@
         submitBtn.addEventListener('click', () => {
             if (selectedValue === null) return;
             
-            // Guardar voto en localStorage
-            const votesKey = `feedback_votes_${sessionId}`;
-            let votes = JSON.parse(localStorage.getItem(votesKey) || '{}');
-            votes[clientId] = selectedValue;
+            // Guardar voto en localStorage (simulando base de datos)
+            const votesKey = `votes_${sessionId}`;
+            let votes = JSON.parse(localStorage.getItem(votesKey) || '[]');
+            votes.push(selectedValue);
             localStorage.setItem(votesKey, JSON.stringify(votes));
             
             // Mostrar mensaje de confirmación
-            const valueText = selectedValue === 0 ? 'No entiendes' : 
-                             selectedValue === 0.5 ? 'Entiendes parcialmente' : 
-                             'Entiendes completamente';
-            
-            messageDiv.textContent = `¡Gracias! Registramos que ${valueText.toLowerCase()}. Puedes votar nuevamente si cambia tu comprensión.`;
+            messageDiv.textContent = '¡Gracias por tu feedback!';
             messageDiv.className = 'message success';
             messageDiv.style.display = 'block';
             
-            // Mostrar botón para nuevo voto
-            newVoteBtn.style.display = 'block';
-            submitBtn.style.display = 'none';
-            
-            // Deseleccionar botones
-            feedbackBtns.forEach(btn => btn.classList.remove('selected'));
-            selectedValue = null;
-        });
-        
-        // Preparar para nuevo voto
-        newVoteBtn.addEventListener('click', () => {
-            messageDiv.style.display = 'none';
-            submitBtn.style.display = 'block';
-            newVoteBtn.style.display = 'none';
+            // Deshabilitar botones
             submitBtn.disabled = true;
+            feedbackBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.style.cursor = 'not-allowed';
+                btn.style.opacity = '0.6';
+            });
+            
+            // Opcional: Redirigir después de 2 segundos
+            setTimeout(() => {
+                messageDiv.textContent += ' Cerrando ventana...';
+                setTimeout(() => {
+                    window.close();
+                }, 1000);
+            }, 2000);
         });
         
-        // Verificar si hay sesión al cargar
+        // Verificar si ya se votó
         window.addEventListener('load', () => {
             if (!sessionId) {
                 messageDiv.textContent = 'Error: No se encontró la sesión.';
@@ -199,7 +172,6 @@
                 messageDiv.style.backgroundColor = '#f8d7da';
                 messageDiv.style.color = '#721c24';
                 submitBtn.disabled = true;
-                newVoteBtn.style.display = 'none';
             }
         });
     </script>
