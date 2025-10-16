@@ -1,8 +1,28 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Semáforo en vivo</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #semaforo {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    #info {
+      margin-top: 20px;
+      font-family: sans-serif;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -11,10 +31,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Tomar el parámetro de clase de la URL
     const params = new URLSearchParams(window.location.search);
     const classId = params.get("class") || "default";
-
     const votesRef = collection(db, "classes", classId, "votes");
 
     onSnapshot(votesRef, (snapshot) => {
@@ -24,14 +42,17 @@
       let avg = values.reduce((a, b) => a + b, 0) / values.length;
       let color = avg > 0.66 ? "green" : avg > 0.33 ? "yellow" : "red";
 
-      document.body.style.background = color;
+      document.getElementById("semaforo").style.background = color;
       document.getElementById("info").innerText =
         `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
     });
   </script>
 </head>
 <body>
+  <div>
+    <div id="semaforo"></div>
+    <div id="info"></div>
+  </div>
 </body>
 </html>
-
 
