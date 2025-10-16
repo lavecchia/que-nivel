@@ -11,10 +11,10 @@
       height: 100vh;
     }
     #semaforo {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      width: 90%;
+      height: 90%;
+      border-radius: 10%;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
     }
     #info {
       margin-top: 5px;
@@ -43,8 +43,9 @@
       let color = avg > 0.66 ? "green" : avg > 0.33 ? "yellow" : "red";
 
       document.getElementById("semaforo").style.background = color;
-      document.getElementById("info").innerText =
-        `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
+      document.getElementById("semaforo").innerText =`${values.length}`;
+      //~ document.getElementById("info").innerText =
+        //~ `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
     });
   </script>
 </head>
