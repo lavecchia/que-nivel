@@ -33,29 +33,26 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 🔹 Cambia esto por el ID de la clase que quieras monitorear
-    const classId = "clase1";
-
     const square = document.getElementById("square");
 
-    onSnapshot(doc(db, "clases", classId), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const votos = data.votos || {};
-        const valores = Object.values(votos);
+    // Tomar el parámetro de clase de la URL
+    const params = new URLSearchParams(window.location.search);
+    const classId = params.get("class") || "default";
 
-        if (valores.length > 0) {
-          const promedio = valores.reduce((a, b) => a + b, 0) / valores.length;
-          if (promedio < 1.5) square.style.background = "red";
-          else if (promedio < 2.5) square.style.background = "yellow";
-          else square.style.background = "green";
-        } else {
-          square.style.background = "gray"; // sin votos
-        }
-      }
+    const votesRef = collection(db, "classes", classId, "votes");
+
+    onSnapshot(votesRef, (snapshot) => {
+      let values = snapshot.docs.map(doc => doc.data().value);
+      if (values.length === 0) return;
+
+      let avg = values.reduce((a, b) => a + b, 0) / values.length;
+      let color = avg > 0.66 ? "green" : avg > 0.33 ? "yellow" : "red";
+
+      document.body.style.background = color;
+      //~ document.getElementById("square").style.background =
+        //~ `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
     });
   </script>
 </body>
 </html>
-
 
