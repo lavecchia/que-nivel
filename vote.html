@@ -3,6 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <title>Votar Semáforo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 { margin-bottom: 30px; }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    button {
+      flex: 1;
+      padding: 20px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    button:active { transform: scale(0.95); }
+
+    /* Colores */
+    .red { background: red; color: white; }
+    .yellow { background: yellow; color: black; }
+    .green { background: green; color: white; }
+
+    /* En pantallas grandes → botones en fila */
+    @media(min-width: 600px) {
+      .buttons { flex-direction: row; }
+      button { font-size: 2em; padding: 30px; }
+    }
+  </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -11,22 +46,26 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ID anónimo (persistente por sesión)
+    const params = new URLSearchParams(window.location.search);
+    const classId = params.get("class") || "default";
+
     const userId = "user-" + Math.random().toString(36).substring(2, 9);
 
     async function vote(value) {
-      await setDoc(doc(db, "votes", userId), { value: value });
-      document.getElementById("msg").innerText = "Tu voto fue registrado ✔️";
+      await setDoc(doc(db, "classes", classId, "votes", userId), { value });
+      document.getElementById("msg").innerText = `Tu voto para ${classId} fue registrado ✔️`;
     }
 
     window.vote = vote;
   </script>
 </head>
-<body style="text-align:center; font-family:sans-serif; margin-top:50px;">
+<body>
   <h2>¿Cómo vas?</h2>
-  <button style="background:red; color:white; padding:20px; margin:10px;" onclick="vote(0)">🔴 Difícil</button>
-  <button style="background:yellow; padding:20px; margin:10px;" onclick="vote(0.5)">🟡 Más o menos</button>
-  <button style="background:green; color:white; padding:20px; margin:10px;" onclick="vote(1)">🟢 Todo bien</button>
+  <div class="buttons">
+    <button class="red" onclick="vote(0)">🔴 Difícil</button>
+    <button class="yellow" onclick="vote(0.5)">🟡 Más o menos</button>
+    <button class="green" onclick="vote(1)">🟢 Todo bien</button>
+  </div>
   <p id="msg" style="margin-top:20px; font-weight:bold;"></p>
 </body>
 </html>

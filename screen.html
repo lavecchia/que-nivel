@@ -11,7 +11,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const votesRef = collection(db, "votes");
+    // Tomar el parámetro de clase de la URL
+    const params = new URLSearchParams(window.location.search);
+    const classId = params.get("class") || "default";
+
+    const votesRef = collection(db, "classes", classId, "votes");
 
     onSnapshot(votesRef, (snapshot) => {
       let values = snapshot.docs.map(doc => doc.data().value);
@@ -22,7 +26,7 @@
 
       document.body.style.background = color;
       document.getElementById("info").innerText =
-        `Promedio: ${avg.toFixed(2)}  |  Votos: ${values.length}`;
+        `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
     });
   </script>
 </head>
