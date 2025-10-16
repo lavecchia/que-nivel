@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Popup Semáforo</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: transparent;
+    }
+    #square {
+      width: 150px;
+      height: 150px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      transition: background 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="square"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "XXXXXX",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 🔹 Cambia esto por el ID de la clase que quieras monitorear
+    const classId = "clase1";
+
+    const square = document.getElementById("square");
+
+    onSnapshot(doc(db, "clases", classId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const votos = data.votos || {};
+        const valores = Object.values(votos);
+
+        if (valores.length > 0) {
+          const promedio = valores.reduce((a, b) => a + b, 0) / valores.length;
+          if (promedio < 1.5) square.style.background = "red";
+          else if (promedio < 2.5) square.style.background = "yellow";
+          else square.style.background = "green";
+        } else {
+          square.style.background = "gray"; // sin votos
+        }
+      }
+    });
+  </script>
+</body>
+</html>
