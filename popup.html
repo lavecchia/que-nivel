@@ -11,8 +11,8 @@
       height: 100vh;
     }
     #semaforo {
-      width: 90%;
-      height: 90%;
+      width: 30px;
+      height: 30px;
       border-radius: 10%;
       box-shadow: 0 0 5px rgba(0,0,0,0.5);
     }
@@ -43,9 +43,7 @@
       let color = avg > 0.66 ? "green" : avg > 0.33 ? "yellow" : "red";
 
       document.getElementById("semaforo").style.background = color;
-      document.getElementById("semaforo").innerText =`${values.length}`;
-      //~ document.getElementById("info").innerText =
-        //~ `Clase: ${classId} | Promedio: ${avg.toFixed(2)} | Votos: ${values.length}`;
+
     });
   </script>
 </head>
